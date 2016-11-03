@@ -15,6 +15,7 @@
 #include <netdb.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include <arpa/inet.h>
 #include <errno.h>
 
@@ -23,6 +24,15 @@
 #define MESSAGE_BUFFER_SIZE 1024
 #define SERVER_ADDRESS "127.0.0.1"
 
+void serv_addr_init(struct sockaddr_in *serv_addr_ptr){
+	serv_addr_ptr->sin_family = AF_INET;
+	if(inet_pton(AF_INET, SERVER_ADDRESS, &serv_addr_ptr->sin_addr) <= 0){
+		fprintf(stdout, "%s: %s\n", __FUNCTION__, strerror(errno));
+		exit(1);
+	}
+	serv_addr_ptr->sin_port = htons(SERVER_PORT);
+}
+
 int main(int argc, char *argv[]){
 	int sock_fd = 0;
 	struct sockaddr_in serv_addr;
@@ -30,13 +40,7 @@ int main(int argc, char *argv[]){
 	
 	memset(&serv_addr, 0, sizeof(serv_addr));
 	memset(buffer, 0, sizeof(buffer));
-
-	serv_addr.sin_family = AF_INET;
-	if(inet_pton(AF_INET, SERVER_ADDRESS, &serv_addr.sin_addr) <= 0){
-		fprintf(stdout, "ERROR: %s\n", strerror(errno));
-		return 1;
-	}
-	serv_addr.sin_port = htons(SERVER_PORT);
+	serv_addr_init(&serv_addr);
 
 	if((sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
 		fprintf(stdout, "ERROR: %s\n", strerror(errno));
@@ -44,7 +48,7 @@ int main(int argc, char *argv[]){
 
 	}
 	if(connect(sock_fd, (struct sockaddr*)&serv_addr, sizeof(serv_addr))){
-		fprintf(stdout, "ERROR: %s\n", strerror(errno));
+		fprintf(stdout, "%s: %s\n", __FUNCTION__, strerror(errno));
 		return 1;
 	}
 	while(1){

@@ -22,22 +22,25 @@
 #define BACKLOG	2
 #define MESSAGE_BUFFER_SIZE 1024
 
+void serv_addr_init(struct sockaddr_in *serv_addr_ptr){
+    serv_addr_ptr->sin_family = AF_INET;
+    serv_addr_ptr->sin_addr.s_addr = htonl(INADDR_ANY);
+    serv_addr_ptr->sin_port = htons(LISTENING_PORT);
+}
+
 int main(int argc, char *argv[]){
 	int listen_fd = 0, conn_fd = 0;
 	struct sockaddr_in serv_addr;
 	char buffer[MESSAGE_BUFFER_SIZE];
+
+	memset(&serv_addr, 0, sizeof(serv_addr));
+	memset(buffer, 0, sizeof(buffer));
+	serv_addr_init(&serv_addr);
 	
 	if((listen_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
 		fprintf(stdout, "ERROR: %s\n", strerror(errno));
 		return 1;
 	}
-	memset(&serv_addr, 0, sizeof(serv_addr));
-	memset(buffer, 0, sizeof(buffer));
-
-	serv_addr.sin_family = AF_INET;
-	serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-	serv_addr.sin_port = htons(LISTENING_PORT);
-
 	if(bind(listen_fd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) == -1){
 		fprintf(stdout, "ERROR: %s\n", strerror(errno));
 		return 1;
