@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <arpa/inet.h>
 #include <errno.h>
+#include <limits.h>
 
 #define SERVER_PORT 51515
 #define BACKLOG	2
@@ -33,11 +34,30 @@ void serv_addr_init(struct sockaddr_in *serv_addr_ptr){
 	serv_addr_ptr->sin_port = htons(SERVER_PORT);
 }
 
+void file_path_validation(char *filepath, char *absolute_filepath){
+	if(realpath(filepath, absolute_filepath) == NULL){
+		fprintf(
+			stdout, 
+			"\n%s[%s:%d]: %s\n\n", 
+			__FILE__, 
+			__FUNCTION__, 
+			__LINE__,
+			strerror(errno));
+		exit(1);
+	}
+}
+
 int main(int argc, char *argv[]){
 	int sock_fd = 0;
 	struct sockaddr_in serv_addr;
 	char buffer[MESSAGE_BUFFER_SIZE];
-	
+	char *filepath = argv[1];
+	char absolute_filepath [PATH_MAX+1];
+
+	file_path_validation(filepath, absolute_filepath);	
+	printf("Absolute path: %s\n\n", absolute_filepath);
+	return 0;
+
 	memset(&serv_addr, 0, sizeof(serv_addr));
 	memset(buffer, 0, sizeof(buffer));
 	serv_addr_init(&serv_addr);
