@@ -5,7 +5,7 @@
  * @brief Despatch jobs to server using sockets
  *
  * Sanitize the inputs, validate the input, construct
- * a server readable message and despatch the job to 
+ * a server readable message and dispatch the job to 
  * server
  */
 
@@ -21,12 +21,16 @@
 #include <errno.h>
 #include <limits.h>
 
+/* Support safe and consistent functions like strlcat() */
+#include <bsd/string.h>
+
 #define SERVER_PORT 51515
 #define BACKLOG	2
 #define MESSAGE_BUFFER_SIZE 1024
 #define SERVER_ADDRESS "127.0.0.1"
 
-void display_error_exit(){
+void display_error_exit()
+{
 	fprintf(
 		stdout, 
 		"\n%s: %s\n\n", 
@@ -34,7 +38,9 @@ void display_error_exit(){
 		strerror(errno));
 	exit(1);
 }
-void usage(char *prog_name){
+
+void usage(char *prog_name)
+{
 	fprintf(
 		stdout, 
 		"usage: %s %s %s %s %s %s\n",
@@ -47,7 +53,8 @@ void usage(char *prog_name){
 	fprintf(stdout, "\tchmod a file after some time\n");
 }
  	
-void serv_addr_init(struct sockaddr_in *serv_addr_ptr){
+void serv_addr_init(struct sockaddr_in *serv_addr_ptr)
+{
 	serv_addr_ptr->sin_family = AF_INET;
 	if(inet_pton(AF_INET, SERVER_ADDRESS, &serv_addr_ptr->sin_addr) <= 0){
 		fprintf(stdout, "%s: %s\n", __FUNCTION__, strerror(errno));
@@ -56,7 +63,8 @@ void serv_addr_init(struct sockaddr_in *serv_addr_ptr){
 	serv_addr_ptr->sin_port = htons(SERVER_PORT);
 }
 
-void file_path_validation(char *filepath, char *absolute_filepath){
+void file_path_validation(char *filepath, char *absolute_filepath)
+{
 	if(realpath(filepath, absolute_filepath) == NULL){
 		/*
 		We could use perror() but I need some more info during 
@@ -67,9 +75,12 @@ void file_path_validation(char *filepath, char *absolute_filepath){
 	}
 }
 
-void process_ochmod(char *permissions, char *filepath, char *timer){
+void process_ochmod(char *permissions, 	char *filepath, char *timer, 
+					char *dispatch_message)
+{
 	char absolute_filepath [PATH_MAX+1];
 	struct stat *filestat = malloc(sizeof(struct stat *));
+//	char dispatch_message[MESSAGE_BUFFER_SIZE];
 
 	file_path_validation(filepath, absolute_filepath);	
 	printf("\nAbsolute path: %s\n\n", absolute_filepath);
@@ -81,9 +92,36 @@ void process_ochmod(char *permissions, char *filepath, char *timer){
 	fprintf(stdout, "We are all set to do chmod\n");
 	/* 	This job is eligible to be put in the queue	*/
 	/*	Despatch the job to the server	*/
+	strlcat(dispatch_message, "chmod", MESSAGE_BUFFER_SIZE);
+	strlcat(dispatch_message, " ",MESSAGE_BUFFER_SIZE);
+	strlcat(dispatch_message, permissions,MESSAGE_BUFFER_SIZE);
+	strlcat(dispatch_message, " ",MESSAGE_BUFFER_SIZE);
+	strlcat(dispatch_message, absolute_filepath, MESSAGE_BUFFER_SIZE);
+	strlcat(dispatch_message, " ",MESSAGE_BUFFER_SIZE);
+	strlcat(dispatch_message, timer, MESSAGE_BUFFER_SIZE);
+	fprintf(stdout, "Final message: %s\n",dispatch_message);
 }
 
-int main(int argc, char *argv[]){
+void send_message(char *message, int sock_fd)
+{
+	/* 
+		Ideally there has to be a while(1) which waits
+		for an acknowledgement from server about job
+		addition to the queue.
+		For now, let's assume the message safely reached
+		the server and server has added it to the queue
+	*/
+	if(write(sock_fd, message, MESSAGE_BUFFER_SIZE) <= 0){
+		display_error_exit();
+	}
+	else{
+		fprintf(stdout, "Job successfully added to the queue\n");
+	}
+	close(sock_fd);
+}
+
+int main(int argc, char *argv[])
+{
 	/*
 		Expected arglist:
 		argv[1] = OCHMOD (indicating the operation is chmod)
@@ -101,10 +139,6 @@ int main(int argc, char *argv[]){
 		usage(argv[0]);
 		exit(1);
 	}
-	if(!strncmp(argv[1], "OCHMOD", 6)){
-		// Make sure it is a chmod operation
-		process_ochmod(argv[3], argv[4], argv[5]);
-	}
 
 	memset(&serv_addr, 0, sizeof(serv_addr));
 	memset(buffer, 0, sizeof(buffer));
@@ -119,6 +153,13 @@ int main(int argc, char *argv[]){
 		fprintf(stdout, "%s: %s\n", __FUNCTION__, strerror(errno));
 		return 1;
 	}
+
+	if(!strncmp(argv[1], "OCHMOD", 6)){
+		// Make sure it is a chmod operation
+		process_ochmod(argv[3], argv[4], argv[5], buffer);
+		send_message(buffer, sock_fd);
+	}
+/*
 	while(1){
 		puts("Please enter the message for server [EOC to terminate]:");
 		fgets(buffer, MESSAGE_BUFFER_SIZE, stdin);
@@ -130,5 +171,6 @@ int main(int argc, char *argv[]){
 		}
 	}
 	close(sock_fd);
+*/
 	return 0;
 }
