@@ -11,6 +11,7 @@
 
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <stdio.h>
 #include <netdb.h>
 #include <string.h>
@@ -25,6 +26,27 @@
 #define MESSAGE_BUFFER_SIZE 1024
 #define SERVER_ADDRESS "127.0.0.1"
 
+void display_error_exit(){
+	fprintf(
+		stdout, 
+		"\n%s: %s\n\n", 
+		__FILE__, 
+		strerror(errno));
+	exit(1);
+}
+void usage(char *prog_name){
+	fprintf(
+		stdout, 
+		"usage: %s %s %s %s %s %s\n",
+		prog_name,
+		"opcode",
+		"operation",
+		"permissions",
+		"filepath",
+		"timer_in_seconds");
+	fprintf(stdout, "\tchmod a file after some time\n");
+}
+ 	
 void serv_addr_init(struct sockaddr_in *serv_addr_ptr){
 	serv_addr_ptr->sin_family = AF_INET;
 	if(inet_pton(AF_INET, SERVER_ADDRESS, &serv_addr_ptr->sin_addr) <= 0){
@@ -36,27 +58,53 @@ void serv_addr_init(struct sockaddr_in *serv_addr_ptr){
 
 void file_path_validation(char *filepath, char *absolute_filepath){
 	if(realpath(filepath, absolute_filepath) == NULL){
-		fprintf(
-			stdout, 
-			"\n%s[%s:%d]: %s\n\n", 
-			__FILE__, 
-			__FUNCTION__, 
-			__LINE__,
-			strerror(errno));
-		exit(1);
+		/*
+		We could use perror() but I need some more info during 
+		debug to find out where exactly it failed
+		perror(filepath);
+		*/
+		display_error_exit();
 	}
 }
 
+void process_ochmod(char *permissions, char *filepath, char *timer){
+	char absolute_filepath [PATH_MAX+1];
+	struct stat *filestat = malloc(sizeof(struct stat *));
+
+	file_path_validation(filepath, absolute_filepath);	
+	printf("\nAbsolute path: %s\n\n", absolute_filepath);
+
+	if((stat(absolute_filepath, filestat)!= 0) ||
+		(filestat->st_uid != geteuid())){
+		display_error_exit();
+	}
+	fprintf(stdout, "We are all set to do chmod\n");
+	/* 	This job is eligible to be put in the queue	*/
+	/*	Despatch the job to the server	*/
+}
+
 int main(int argc, char *argv[]){
+	/*
+		Expected arglist:
+		argv[1] = OCHMOD (indicating the operation is chmod)
+		argv[2] = chmod
+		argv[3] = Permission bits (either with '0' or without)
+		argv[4] = File path
+		argv[5] = Time duration (let's say in seconds for now)
+	*/
 	int sock_fd = 0;
 	struct sockaddr_in serv_addr;
 	char buffer[MESSAGE_BUFFER_SIZE];
-	char *filepath = argv[1];
-	char absolute_filepath [PATH_MAX+1];
 
-	file_path_validation(filepath, absolute_filepath);	
-	printf("Absolute path: %s\n\n", absolute_filepath);
-	return 0;
+	/*	 Probably this if would be replaced with a switch() */
+	if(argc < 2){
+		usage(argv[0]);
+		exit(1);
+	}
+	if(!strncmp(argv[1], "OCHMOD", 6)){
+		// Make sure it is a chmod operation
+		process_ochmod(argv[3], argv[4], argv[5]);
+	}
 
 	memset(&serv_addr, 0, sizeof(serv_addr));
 	memset(buffer, 0, sizeof(buffer));
