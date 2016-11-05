@@ -8,9 +8,12 @@ ODIR=obj
 LDIR=lib
 
 # Required for strlcat() and strlcpy() functions
-LIBS=-lbsd
+CLIENT_LIBS=-lbsd
 
-DELIVERABLES=fimerclient fimerserver
+# POSIX Threads support
+SERVER_LIBS=-lpthread
+
+DELIVERABLES=fimerclient fimerserver fimerd
 
 #_DEPS = customheaderoffuture.h
 #DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
@@ -24,6 +27,9 @@ CLIENT_OBJ = $(patsubst %,$(ODIR)/%,$(C_OBJ))
 S_OBJ = fimerserver.o
 SERVER_OBJ = $(patsubst %,$(ODIR)/%,$(S_OBJ))
 
+SD_OBJ = fimerd.o
+SERVERD_OBJ = $(patsubst %,$(ODIR)/%,$(SD_OBJ))
+
 $(ODIR)/%.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
@@ -34,10 +40,13 @@ $(ODIR)/%.o: %.c
 #	gcc -o $@ $^ $(CFLAGS) $(LIBS)
 
 fimerclient: $(CLIENT_OBJ)
-	gcc -o $@ $^ $(CFLAGS) $(LIBS)
+	gcc -o $@ $^ $(CFLAGS) $(CLIENT_LIBS)
 
 fimerserver: $(SERVER_OBJ)
 	gcc -o $@ $^ $(CFLAGS)
+
+fimerd: $(SERVERD_OBJ)
+	gcc -o $@ $^ $(CFLAGS) $(SERVER_LIBS)
 
 all: $(DELIVERABLES)
 
