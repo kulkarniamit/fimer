@@ -24,13 +24,15 @@
 #define BACKLOG	2
 #define MESSAGE_BUFFER_SIZE 1024
 
-void serv_addr_init(struct sockaddr_in *serv_addr_ptr){
+void serv_addr_init(struct sockaddr_in *serv_addr_ptr)
+{
     serv_addr_ptr->sin_family = AF_INET;
     serv_addr_ptr->sin_addr.s_addr = htonl(INADDR_ANY);
     serv_addr_ptr->sin_port = htons(LISTENING_PORT);
 }
 
-int main(int argc, char *argv[]){
+int main(int argc, char *argv[])
+{
 	int listen_fd = 0, conn_fd = 0;
 	struct sockaddr_in serv_addr;
 	char buffer[MESSAGE_BUFFER_SIZE];
@@ -65,7 +67,7 @@ int main(int argc, char *argv[]){
 			close(conn_fd);
 			break;
 		}
-		fprintf(stdout, buffer);
+		fprintf(stdout, "Received message: %s\n",buffer);
 
 		clock_gettime(CLOCK_MONOTONIC, &job_assign_time);
 		now = job_assign_time;
