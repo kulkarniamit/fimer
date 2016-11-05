@@ -79,8 +79,7 @@ void process_ochmod(char *permissions, 	char *filepath, char *timer,
 					char *dispatch_message)
 {
 	char absolute_filepath [PATH_MAX+1];
-	struct stat *filestat = malloc(sizeof(struct stat *));
-//	char dispatch_message[MESSAGE_BUFFER_SIZE];
+	struct stat *filestat = malloc(sizeof(struct stat));
 
 	file_path_validation(filepath, absolute_filepath);	
 	printf("\nAbsolute path: %s\n\n", absolute_filepath);
@@ -89,6 +88,7 @@ void process_ochmod(char *permissions, 	char *filepath, char *timer,
 		(filestat->st_uid != geteuid())){
 		display_error_exit();
 	}
+	free(filestat);
 	fprintf(stdout, "We are all set to do chmod\n");
 	/* 	This job is eligible to be put in the queue	*/
 	/*	Despatch the job to the server	*/
