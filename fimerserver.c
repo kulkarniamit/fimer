@@ -12,11 +12,13 @@
 
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <stdio.h>
 #include <netdb.h>
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include <time.h>
 
 #define LISTENING_PORT 51515
 #define BACKLOG	2
@@ -32,6 +34,7 @@ int main(int argc, char *argv[]){
 	int listen_fd = 0, conn_fd = 0;
 	struct sockaddr_in serv_addr;
 	char buffer[MESSAGE_BUFFER_SIZE];
+	struct timespec job_assign_time, now;
 
 	memset(&serv_addr, 0, sizeof(serv_addr));
 	memset(buffer, 0, sizeof(buffer));
@@ -63,6 +66,25 @@ int main(int argc, char *argv[]){
 			break;
 		}
 		fprintf(stdout, buffer);
+
+		clock_gettime(CLOCK_MONOTONIC, &job_assign_time);
+		now = job_assign_time;
+		now.tv_sec += 5;
+		fprintf(stdout, "Start time: %lu\n",job_assign_time.tv_sec);
+		fprintf(stdout, "End time: %lu\n",now.tv_sec);
+		sleep(5);
+		struct timespec ts_current;
+		struct timespec ts_remaining;
+		clock_gettime(CLOCK_MONOTONIC, &ts_current);
+		fprintf(stdout, "New time: %lu\n",ts_current.tv_sec);
+		
+		ts_remaining.tv_sec = now.tv_sec - ts_current.tv_sec;
+
+		if(ts_remaining.tv_sec <= 0){
+			fprintf(stdout, "Alright, time's up!\n");
+			fprintf(stdout, "Time to perform operation..\n");
+			break;
+		}
 		memset(buffer, 0, sizeof(buffer));
 	}
 	close(listen_fd);
