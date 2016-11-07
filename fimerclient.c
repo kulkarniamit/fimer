@@ -30,6 +30,7 @@
 #define BACKLOG	2
 #define MESSAGE_BUFFER_SIZE 1024
 #define SERVER_ADDRESS "127.0.0.1"
+#define MESSAGE_SEPARATOR ":"
 
 void display_error_exit()
 {
@@ -45,10 +46,9 @@ void usage(char *prog_name)
 {
 	fprintf(
 		stdout, 
-		"usage: %s %s %s %s %s %s\n",
+		"usage: %s %s %s %s %s\n",
 		prog_name,
 		"opcode",
-		"operation",
 		"permissions",
 		"filepath",
 		"timer_in_seconds");
@@ -77,8 +77,8 @@ void file_path_validation(char *filepath, char *absolute_filepath)
 	}
 }
 
-void process_ochmod(char *permissions, 	char *filepath, char *timer, 
-					char *dispatch_message)
+void process_ochmod(char *opcode, char *permissions,
+					char *filepath, char *timer, char *dispatch_message)
 {
 	char absolute_filepath [PATH_MAX+1];
 	struct stat *filestat = malloc(sizeof(struct stat));
@@ -94,12 +94,12 @@ void process_ochmod(char *permissions, 	char *filepath, char *timer,
 	fprintf(stdout, "We are all set to do chmod\n");
 	/* 	This job is eligible to be put in the queue	*/
 	/*	Despatch the job to the server	*/
-	strlcat(dispatch_message, "chmod", MESSAGE_BUFFER_SIZE);
-	strlcat(dispatch_message, " ",MESSAGE_BUFFER_SIZE);
-	strlcat(dispatch_message, permissions,MESSAGE_BUFFER_SIZE);
-	strlcat(dispatch_message, " ",MESSAGE_BUFFER_SIZE);
+	strlcat(dispatch_message, opcode, MESSAGE_BUFFER_SIZE);
+	strlcat(dispatch_message, MESSAGE_SEPARATOR, MESSAGE_BUFFER_SIZE);
+	strlcat(dispatch_message, permissions, MESSAGE_BUFFER_SIZE);
+	strlcat(dispatch_message, MESSAGE_SEPARATOR, MESSAGE_BUFFER_SIZE);
 	strlcat(dispatch_message, absolute_filepath, MESSAGE_BUFFER_SIZE);
-	strlcat(dispatch_message, " ",MESSAGE_BUFFER_SIZE);
+	strlcat(dispatch_message, MESSAGE_SEPARATOR, MESSAGE_BUFFER_SIZE);
 	strlcat(dispatch_message, timer, MESSAGE_BUFFER_SIZE);
 	fprintf(stdout, "Final message: %s\n",dispatch_message);
 }
@@ -127,10 +127,9 @@ int main(int argc, char *argv[])
 	/*
 		Expected arglist:
 		argv[1] = OCHMOD (indicating the operation is chmod)
-		argv[2] = chmod
-		argv[3] = Permission bits (either with '0' or without)
-		argv[4] = File path
-		argv[5] = Time duration (let's say in seconds for now)
+		argv[2] = Permission bits (either with '0' or without)
+		argv[3] = File path
+		argv[4] = Time duration (let's say in seconds for now)
 	*/
 	int sock_fd = 0;
 	struct sockaddr_in serv_addr;
@@ -156,23 +155,21 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	unsigned int opcode = strtol(argv[1], NULL, 10);
+	switch(opcode){
+		case OCHMOD:
+			process_ochmod(argv[1], argv[2], argv[3], argv[4], buffer);
+			send_message(buffer, sock_fd);
+			break;
+		default: usage(argv[0]);
+				 exit(1);
+	}
+/*
 	if(!strncmp(argv[1], "OCHMOD", 6)){
 		// Make sure it is a chmod operation
 		process_ochmod(argv[3], argv[4], argv[5], buffer);
 		send_message(buffer, sock_fd);
 	}
-/*
-	while(1){
-		puts("Please enter the message for server [EOC to terminate]:");
-		fgets(buffer, MESSAGE_BUFFER_SIZE, stdin);
-		if(strncmp(buffer, "EOC",3) == 0){
-			break;
-		}
-		if(write(sock_fd, buffer, MESSAGE_BUFFER_SIZE) <= 0){
-			fprintf(stdout, "ERROR: %s\n", strerror(errno));
-		}
-	}
-	close(sock_fd);
 */
 	return 0;
 }
