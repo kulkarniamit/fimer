@@ -21,6 +21,12 @@ DELIVERABLES=fimerclient fimerserver fimerd
 #_OBJ = hellomake.o hellofunc.o 
 #OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
+S_DEPS = opcodes.h
+SERVER_DEPS = $(patsubst %,$(IDIR)/%,$(S_DEPS))
+
+C_DEPS = opcodes.h
+CLIENT_DEPS = $(patsubst %,$(IDIR)/%,$(C_DEPS))
+
 C_OBJ = fimerclient.o
 CLIENT_OBJ = $(patsubst %,$(ODIR)/%,$(C_OBJ))
 
@@ -30,7 +36,16 @@ SERVER_OBJ = $(patsubst %,$(ODIR)/%,$(S_OBJ))
 SD_OBJ = fimerd.o
 SERVERD_OBJ = $(patsubst %,$(ODIR)/%,$(SD_OBJ))
 
-$(ODIR)/%.o: %.c
+#$(ODIR)/%.o: %.c
+#	$(CC) -c -o $@ $< $(CFLAGS)
+
+$(ODIR)/fimerclient.o: fimerclient.c $(CLIENT_DEPS)
+	$(CC) -c -o $@ $< $(CFLAGS)
+	
+$(ODIR)/fimerserver.o: fimerserver.c $(SERVER_DEPS)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+$(ODIR)/fimerd.o: fimerd.c $(SERVER_DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 #$(ODIR)/%.o: %.c $(DEPS)
