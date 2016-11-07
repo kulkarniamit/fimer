@@ -30,90 +30,19 @@
 #include <pthread.h>
 
 #include "include/opcodes.h"
+#include "include/job.h"
+#include "include/linkedlist.h"
 
 #define LISTENING_PORT 51515
 #define BACKLOG	2
 #define MESSAGE_BUFFER_SIZE 1024
 
 /**********************************************************************/
-/*	Structs to be moved to a header file							  */
-/**********************************************************************/
-struct job_duration
-{
-	char unit;
-	unsigned int time;
-};
-
-struct job_data
-{
-	unsigned int opcode;
-	char *filepath;
-	char *params;
-	void (*job_worker)(char *);
-};
-
-struct job
-{
-	unsigned int delete:1;
-	struct job_duration *duration;
-	struct job_data *data;
-	struct job *next;
-};
-/**********************************************************************/
 /*	Operation methods to be moved to a header file					  */
 /**********************************************************************/
 void process_chmod(char *params)
 {
 	syslog(LOG_INFO, "RIP, we will process and add to queue\n");
-}
-/**********************************************************************/
-/*	Linked list methods to be moved to a header file				  */
-/**********************************************************************/
-void print_ll(struct job *head)
-{
-	struct job *current = head;
-	while(current != NULL){
-		syslog(LOG_INFO, "Printing job params\n");
-		syslog(LOG_INFO, "delete flag: %d\n", current->delete);
-		syslog(
-			LOG_INFO,
-			"Duration: %d%c\n",
-			current->duration->time,
-			current->duration->unit);
-		syslog(
-			LOG_INFO,
-			"Data: 0x%04x:%s:%s\n",
-			current->data->opcode,
-			current->data->filepath,
-			current->data->params);
-		current->data->job_worker(current->data->params);
-		current = current->next;
-	}
-}
-
-void push_to_ll(struct job **head_ref, struct job *new)
-{
-    /*  Given a reference (pointer to pointer) to the head
-        of a list and an int, appends a new node at the end  */
-    struct job *last = *head_ref;
-
-    /*  New node is going to be the last node, so make next 
-        of it as NULL*/
-    new->next = NULL;
-
-    /*  If the Linked List is empty, then make the new job as head */
-    if(*head_ref == NULL){
-        *head_ref = malloc(sizeof(struct job));
-        *head_ref = new;
-        return;
-    }
-
-    /*  Else traverse till the last node */
-    while (last->next != NULL)
-        last = last->next;
-
-    /*  Change the next of last node */
-    last->next = new;
 }
 /**********************************************************************/
 void parse_and_add()
@@ -154,9 +83,9 @@ void parse_and_add()
 	new_2->data = data;
 	new_2->next = NULL;
 	
-	push_to_ll(&head, new);
-	push_to_ll(&head, new_2);
-	print_ll(head);
+	append_jobs_list(&head, new);
+	append_jobs_list(&head, new_2);
+	print_jobs_list(head);
 	
 	/*	
 		You have to free() the allocated memory in exact reverse 
@@ -179,12 +108,12 @@ int global_guy=1;
 
 void display_error_exit()
 {
-    fprintf(
-        stdout,
+    syslog(
+        LOG_INFO,
         "\n%s: %s\n\n",
         __FILE__,
         strerror(errno));
-    exit(1);
+    exit(EXIT_FAILURE);
 }
 
 void serv_addr_init(struct sockaddr_in *serv_addr_ptr)
@@ -240,13 +169,10 @@ void *thread_job(void *ptr){
 		struct timespec ts_current;
 		struct timespec ts_remaining;
 		clock_gettime(CLOCK_MONOTONIC, &ts_current);
-		fprintf(stdout, "New time: %lu\n",ts_current.tv_sec);
-		
 		ts_remaining.tv_sec = now.tv_sec - ts_current.tv_sec;
 
 		if(ts_remaining.tv_sec <= 0){
-			fprintf(stdout, "Alright, time's up!\n");
-			fprintf(stdout, "Time to perform operation..\n");
+			syslog(LOG_INFO, "Time's up! Its time to perform operation..\n");
 			syslog(LOG_INFO, "Time elapsed, happy times now\n");
 			break;
 		}
