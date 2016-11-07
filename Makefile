@@ -4,7 +4,8 @@ CC=gcc
 #CFLAGS=-I$(IDIR)
 CFLAGS=-g
 
-ODIR=obj
+CLIENT_ODIR=obj/client
+SERVER_ODIR=obj/server
 LDIR=lib
 
 # Required for strlcat() and strlcpy() functions
@@ -13,52 +14,36 @@ CLIENT_LIBS=-lbsd
 # POSIX Threads support
 SERVER_LIBS=-lpthread
 
-DELIVERABLES=fimerclient fimerserver fimerd
+DELIVERABLES=fimerclient fimerd
 
-#_DEPS = customheaderoffuture.h
-#DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
-
-#_OBJ = hellomake.o hellofunc.o 
-#OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
-
-S_DEPS = opcodes.h
-SERVER_DEPS = $(patsubst %,$(IDIR)/%,$(S_DEPS))
-
+########################################################
+# Client build
+########################################################
 C_DEPS = opcodes.h
 CLIENT_DEPS = $(patsubst %,$(IDIR)/%,$(C_DEPS))
 
 C_OBJ = fimerclient.o
-CLIENT_OBJ = $(patsubst %,$(ODIR)/%,$(C_OBJ))
+CLIENT_OBJ = $(patsubst %,$(CLIENT_ODIR)/%,$(C_OBJ))
 
-S_OBJ = fimerserver.o
-SERVER_OBJ = $(patsubst %,$(ODIR)/%,$(S_OBJ))
-
-SD_OBJ = fimerd.o
-SERVERD_OBJ = $(patsubst %,$(ODIR)/%,$(SD_OBJ))
-
-#$(ODIR)/%.o: %.c
-#	$(CC) -c -o $@ $< $(CFLAGS)
-
-$(ODIR)/fimerclient.o: fimerclient.c $(CLIENT_DEPS)
+$(CLIENT_ODIR)/%.o: %.c $(CLIENT_DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
+########################################################
+# Server build
+########################################################
+S_DEPS = opcodes.h job.h linkedlist.h
+SERVERD_DEPS = $(patsubst %,$(IDIR)/%,$(S_DEPS))
+
+SD_OBJ = fimerd.o linkedlist.o
+SERVERD_OBJ = $(patsubst %,$(SERVER_ODIR)/%,$(SD_OBJ))
 	
-$(ODIR)/fimerserver.o: fimerserver.c $(SERVER_DEPS)
+$(SERVER_ODIR)/%.o: %.c $(SERVERD_DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-$(ODIR)/fimerd.o: fimerd.c $(SERVER_DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
-
-#$(ODIR)/%.o: %.c $(DEPS)
-#	$(CC) -c -o $@ $< $(CFLAGS)
-
-#hellomake: $(OBJ)
-#	gcc -o $@ $^ $(CFLAGS) $(LIBS)
-
+########################################################
+# Binary builds
+########################################################
 fimerclient: $(CLIENT_OBJ)
 	gcc -o $@ $^ $(CFLAGS) $(CLIENT_LIBS)
-
-fimerserver: $(SERVER_OBJ)
-	gcc -o $@ $^ $(CFLAGS)
 
 fimerd: $(SERVERD_OBJ)
 	gcc -o $@ $^ $(CFLAGS) $(SERVER_LIBS)
@@ -68,5 +53,6 @@ all: $(DELIVERABLES)
 .PHONY: clean
 
 clean:
-	rm -f $(ODIR)/*.o
+	rm -f $(CLIENT_ODIR)/*.o
+	rm -f $(SERVER_ODIR)/*.o
 	rm -f $(DELIVERABLES)
