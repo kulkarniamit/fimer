@@ -24,6 +24,8 @@
 /* Support safe and consistent functions like strlcat() */
 #include <bsd/string.h>
 
+#include "include/opcodes.h"
+
 #define SERVER_PORT 51515
 #define BACKLOG	2
 #define MESSAGE_BUFFER_SIZE 1024

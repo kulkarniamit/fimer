@@ -17,6 +17,7 @@
 
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <linux/limits.h>
 #include <sys/stat.h>
 #include <stdio.h>
 #include <netdb.h>
@@ -28,9 +29,151 @@
 #include <time.h>
 #include <pthread.h>
 
+#include "include/opcodes.h"
+
 #define LISTENING_PORT 51515
 #define BACKLOG	2
 #define MESSAGE_BUFFER_SIZE 1024
+
+/**********************************************************************/
+/*	Structs to be moved to a header file							  */
+/**********************************************************************/
+struct job_duration
+{
+	char unit;
+	unsigned int time;
+};
+
+struct job_data
+{
+	unsigned int opcode;
+	char *filepath;
+	char *params;
+	void (*job_worker)(char *);
+};
+
+struct job
+{
+	unsigned int delete:1;
+	struct job_duration *duration;
+	struct job_data *data;
+	struct job *next;
+};
+/**********************************************************************/
+/*	Operation methods to be moved to a header file					  */
+/**********************************************************************/
+void process_chmod(char *params)
+{
+	syslog(LOG_INFO, "RIP, we will process and add to queue\n");
+}
+/**********************************************************************/
+/*	Linked list methods to be moved to a header file				  */
+/**********************************************************************/
+void print_ll(struct job *head)
+{
+	struct job *current = head;
+	while(current != NULL){
+		syslog(LOG_INFO, "Printing job params\n");
+		syslog(LOG_INFO, "delete flag: %d\n", current->delete);
+		syslog(
+			LOG_INFO,
+			"Duration: %d%c\n",
+			current->duration->time,
+			current->duration->unit);
+		syslog(
+			LOG_INFO,
+			"Data: 0x%04x:%s:%s\n",
+			current->data->opcode,
+			current->data->filepath,
+			current->data->params);
+		current->data->job_worker(current->data->params);
+		current = current->next;
+	}
+}
+
+void push_to_ll(struct job **head_ref, struct job *new)
+{
+    /*  Given a reference (pointer to pointer) to the head
+        of a list and an int, appends a new node at the end  */
+    struct job *last = *head_ref;
+
+    /*  New node is going to be the last node, so make next 
+        of it as NULL*/
+    new->next = NULL;
+
+    /*  If the Linked List is empty, then make the new job as head */
+    if(*head_ref == NULL){
+        *head_ref = malloc(sizeof(struct job));
+        *head_ref = new;
+        return;
+    }
+
+    /*  Else traverse till the last node */
+    while (last->next != NULL)
+        last = last->next;
+
+    /*  Change the next of last node */
+    last->next = new;
+}
+/**********************************************************************/
+void parse_and_add()
+{
+	struct job_data *data = malloc(sizeof(struct job_data));
+	struct job_duration *duration = malloc(sizeof(struct job_duration));
+
+	/*  Sample Initializations  */
+	char received_filepath[PATH_MAX] = "/home/user/somefile";
+	char received_params[MESSAGE_BUFFER_SIZE] = "0700";
+
+	/*  Linked list head allocation */
+	struct job *head = NULL;
+	
+	/*  Create a new job for every new request  */
+	struct job *new = malloc(sizeof(struct job));
+	
+	/*  Initialize job_data struct  */
+	data->opcode = OCHMOD;
+	data->filepath = malloc(strlen(received_filepath)+1);   /* Remember +1 */
+	strcpy(data->filepath, received_filepath);
+	data->params= malloc(strlen(received_params)+1);    /* Remember +1 */
+	strcpy(data->params, received_params);
+	data->job_worker = process_chmod;
+	
+	/*  Initialize job_duration struct  */
+	duration->unit = 'm';
+	duration->time = 10;
+	
+	new->delete = 0;
+	new->duration = duration;
+	new->data = data;
+	new->next = NULL;
+	
+	struct job *new_2 = malloc(sizeof(struct job));
+	new_2->delete = 1;
+	new_2->duration = duration;
+	new_2->data = data;
+	new_2->next = NULL;
+	
+	push_to_ll(&head, new);
+	push_to_ll(&head, new_2);
+	print_ll(head);
+	
+	/*	
+		You have to free() the allocated memory in exact reverse 
+		order of how it was allocated using malloc()	
+	*/
+	/*   Free the heap memory   */
+	struct job *tmp;
+
+	while (head != NULL){
+		tmp = head;
+		head = head->next;
+		free(tmp);
+    }
+	free(duration);
+	free(data);
+}
+
 
 int global_guy=1;
 
@@ -84,8 +227,10 @@ void *thread_job(void *ptr){
 			break;
 		}
 		syslog(LOG_INFO, "Received a message on socket\n");
+	
+		/*	Function to parse and add job to queue	*/	
+		parse_and_add();
 
-		fprintf(stdout, "Received message: %s\n",buffer);
 		clock_gettime(CLOCK_MONOTONIC, &job_assign_time);
 		now = job_assign_time;
 		now.tv_sec += 5;
