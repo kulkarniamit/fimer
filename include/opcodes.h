@@ -1,5 +1,5 @@
-#ifndef _OPCODES_H
-#define _OPCODES_H
+#ifndef _OPCODES_H_
+#define _OPCODES_H_
 
 #define OCHMOD			1
 #define OFILEREMOVE		2
