@@ -3,9 +3,9 @@ CC=gcc
 
 #CFLAGS=-I$(IDIR)
 CFLAGS=-g
-
-CLIENT_ODIR=obj/client
-SERVER_ODIR=obj/server
+OBJDIR=obj
+CLIENT_ODIR=$(OBJDIR)/client
+SERVER_ODIR=$(OBJDIR)/server
 LDIR=lib
 
 # Required for strlcat() and strlcpy() functions
@@ -26,6 +26,7 @@ C_OBJ = fimerclient.o
 CLIENT_OBJ = $(patsubst %,$(CLIENT_ODIR)/%,$(C_OBJ))
 
 $(CLIENT_ODIR)/%.o: %.c $(CLIENT_DEPS)
+	@mkdir -p $(@D)
 	$(CC) -c -o $@ $< $(CFLAGS)
 ########################################################
 # Server build
@@ -37,6 +38,7 @@ SD_OBJ = fimerd.o linkedlist.o
 SERVERD_OBJ = $(patsubst %,$(SERVER_ODIR)/%,$(SD_OBJ))
 	
 $(SERVER_ODIR)/%.o: %.c $(SERVERD_DEPS)
+	@mkdir -p $(@D)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 ########################################################
@@ -56,3 +58,4 @@ clean:
 	rm -f $(CLIENT_ODIR)/*.o
 	rm -f $(SERVER_ODIR)/*.o
 	rm -f $(DELIVERABLES)
+	rm -rf $(OBJDIR)
