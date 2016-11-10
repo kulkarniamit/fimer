@@ -31,7 +31,7 @@ $(CLIENT_ODIR)/%.o: %.c $(CLIENT_DEPS)
 ########################################################
 # Server build
 ########################################################
-S_DEPS = opcodes.h job.h linkedlist.h
+S_DEPS = opcodes.h job.h linkedlist.h utilities.h
 SERVERD_DEPS = $(patsubst %,$(IDIR)/%,$(S_DEPS))
 
 SD_OBJ = fimerd.o linkedlist.o
