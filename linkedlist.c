@@ -50,8 +50,8 @@ void append_jobs_list(struct job **head_ref, struct job *new)
 
 void free_job_data(struct job *job_to_free)
 {	
-	free(job_to_free->data->filepath);
 	free(job_to_free->data->params);
+	free(job_to_free->data->filepath);
 	free(job_to_free->data);
 }
 
