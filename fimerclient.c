@@ -48,10 +48,11 @@ void usage(char *prog_name)
 		stdout, 
 		"usage: %s %s %s %s %s\n",
 		prog_name,
-		"opcode",
-		"permissions",
 		"filepath",
-		"timer_in_seconds");
+		"timer_in_seconds",
+		"opcode",
+		"permissions");
+
 	fprintf(stdout, "\tchmod a file after some time\n");
 }
  	
@@ -77,30 +78,31 @@ void file_path_validation(char *filepath, char *absolute_filepath)
 	}
 }
 
-void process_ochmod(char *opcode, char *permissions,
-					char *filepath, char *timer, char *dispatch_message)
+void process_ochmod(char *filepath, char *timer,
+					char *opcode, char *permissions, char *dispatch_message)
 {
 	char absolute_filepath [PATH_MAX+1];
 	struct stat *filestat = malloc(sizeof(struct stat));
 
 	file_path_validation(filepath, absolute_filepath);	
+/*
 	printf("\nAbsolute path: %s\n\n", absolute_filepath);
-
+*/
 	if((stat(absolute_filepath, filestat)!= 0) ||
 		(filestat->st_uid != geteuid())){
 		display_error_exit();
 	}
 	free(filestat);
-	fprintf(stdout, "We are all set to do chmod\n");
 	/* 	This job is eligible to be put in the queue	*/
 	/*	Despatch the job to the server	*/
+	strlcat(dispatch_message, absolute_filepath, MESSAGE_BUFFER_SIZE);
+	strlcat(dispatch_message, MESSAGE_SEPARATOR, MESSAGE_BUFFER_SIZE);
+	strlcat(dispatch_message, timer, MESSAGE_BUFFER_SIZE);
+	strlcat(dispatch_message, MESSAGE_SEPARATOR, MESSAGE_BUFFER_SIZE);
 	strlcat(dispatch_message, opcode, MESSAGE_BUFFER_SIZE);
 	strlcat(dispatch_message, MESSAGE_SEPARATOR, MESSAGE_BUFFER_SIZE);
 	strlcat(dispatch_message, permissions, MESSAGE_BUFFER_SIZE);
 	strlcat(dispatch_message, MESSAGE_SEPARATOR, MESSAGE_BUFFER_SIZE);
-	strlcat(dispatch_message, absolute_filepath, MESSAGE_BUFFER_SIZE);
-	strlcat(dispatch_message, MESSAGE_SEPARATOR, MESSAGE_BUFFER_SIZE);
-	strlcat(dispatch_message, timer, MESSAGE_BUFFER_SIZE);
 	fprintf(stdout, "Final message: %s\n",dispatch_message);
 }
 
@@ -126,10 +128,10 @@ int main(int argc, char *argv[])
 {
 	/*
 		Expected arglist:
-		argv[1] = OCHMOD (indicating the operation is chmod)
-		argv[2] = Permission bits (either with '0' or without)
-		argv[3] = File path
-		argv[4] = Time duration (let's say in seconds for now)
+		argv[1] = File path
+		argv[2] = Time duration (let's say in seconds for now)
+		argv[3] = OCHMOD (indicating the operation is chmod)
+		argv[4] = Permission bits (either with '0' or without)
 	*/
 	int sock_fd = 0;
 	struct sockaddr_in serv_addr;
@@ -155,7 +157,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	unsigned int opcode = strtol(argv[1], NULL, 10);
+	unsigned int opcode = strtol(argv[3], NULL, 10);
 	switch(opcode){
 		case OCHMOD:
 			process_ochmod(argv[1], argv[2], argv[3], argv[4], buffer);
@@ -164,12 +166,5 @@ int main(int argc, char *argv[])
 		default: usage(argv[0]);
 				 exit(1);
 	}
-/*
-	if(!strncmp(argv[1], "OCHMOD", 6)){
-		// Make sure it is a chmod operation
-		process_ochmod(argv[3], argv[4], argv[5], buffer);
-		send_message(buffer, sock_fd);
-	}
-*/
 	return 0;
 }
