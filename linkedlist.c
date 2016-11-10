@@ -12,15 +12,13 @@ void print_jobs_list(struct job *head)
         syslog(
             LOG_INFO,
             "Duration: %d%c\n",
-            current->duration->time,
-            current->duration->unit);
+            current->job_expiry.tv_sec);
         syslog(
             LOG_INFO,
             "Data: 0x%04x:%s:%s\n",
             current->data->opcode,
             current->data->filepath,
             current->data->params);
-        current->data->job_worker(current->data->params);
         current = current->next;
     }
 }
@@ -48,4 +46,47 @@ void append_jobs_list(struct job **head_ref, struct job *new)
 
     /*  Change the next of last node */
     last->next = new;
+}
+
+void free_job_data(struct job *job_to_free)
+{	
+	free(job_to_free->data->filepath);
+	free(job_to_free->data->params);
+	free(job_to_free->data);
+}
+
+void delete_job(struct job **head_ref, struct job *job_to_delete)
+{
+	struct job *head = *head_ref;
+	struct job *prev = head;
+	if(head == job_to_delete){
+		/*	head is supposed to be deleted	*/
+		if(head->next == NULL){
+			/*	There is only 1 node	*/
+			free_job_data(head);
+			free(head);
+			*head_ref = NULL;
+			return;
+		}
+		else{
+			/* There are multiple nodes	*/
+			*head_ref = head->next;
+			free_job_data(head);
+			free(head);
+			return;
+		}
+	}
+	
+	while(prev->next != NULL && prev->next != job_to_delete){
+		prev = prev->next;
+	}
+	if(prev->next == NULL){
+		syslog(LOG_INFO,"Job not found in the list\n");
+		return;
+	}
+
+	/* Remove the given job */
+	prev->next = prev->next->next;
+	free_job_data(job_to_delete);
+	free(job_to_delete);
 }
