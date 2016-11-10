@@ -18,8 +18,8 @@
 #include <ctype.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <linux/limits.h>
 #include <sys/stat.h>
+#include <linux/limits.h>
 #include <stdio.h>
 #include <netdb.h>
 #include <string.h>
@@ -62,6 +62,12 @@ struct timespec current_time;
 /**********************************************************************/
 void process_chmod(char *filepath, char *params)
 {
+	int i;
+	i = strtol(params, 0, 8);
+	if (chmod (filepath,i) < 0){
+		syslog(LOG_ERR, "File permissions could not be changed for %s",
+			   filepath);
+	}
 	syslog(LOG_INFO, "RIP, Let's do the job\n");
 	syslog(LOG_INFO, "Let's chmod the %s file \n", filepath);	
 }
@@ -219,11 +225,11 @@ void *thread_job(void *ptr){
 		display_error_exit();
 	}
 
-	conn_fd = accept(listen_fd, (struct sockaddr*)NULL, NULL);
-	if(conn_fd <= 0){
-		display_error_exit();
-	}
 	while(1){
+		conn_fd = accept(listen_fd, (struct sockaddr*)NULL, NULL);
+		if(conn_fd <= 0){
+			display_error_exit();
+		}
 		if(read(conn_fd, buffer, MESSAGE_BUFFER_SIZE) == 0){
 			/*	No bytes read	*/
 			puts("Exiting..");
