@@ -80,6 +80,10 @@ void assign_job(char *job_message)
 			data->opcode = OCHMOD;
 			data->job_worker = process_chmod;
 			break;
+		case OREMOVE:
+			data->opcode = OREMOVE;
+			data->job_worker = process_rm;
+			break;
 		default:	exit(EXIT_FAILURE);	
 	}
 	

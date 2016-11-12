@@ -85,9 +85,6 @@ void process_ochmod(char *filepath, char *timer,
 	struct stat *filestat = malloc(sizeof(struct stat));
 
 	file_path_validation(filepath, absolute_filepath);	
-/*
-	printf("\nAbsolute path: %s\n\n", absolute_filepath);
-*/
 	if((stat(absolute_filepath, filestat)!= 0) ||
 		(filestat->st_uid != geteuid())){
 		display_error_exit();
@@ -103,6 +100,30 @@ void process_ochmod(char *filepath, char *timer,
 	strlcat(dispatch_message, MESSAGE_SEPARATOR, MESSAGE_BUFFER_SIZE);
 	strlcat(dispatch_message, permissions, MESSAGE_BUFFER_SIZE);
 	strlcat(dispatch_message, MESSAGE_SEPARATOR, MESSAGE_BUFFER_SIZE);
+	fprintf(stdout, "Final message: %s\n",dispatch_message);
+}
+
+void process_oremove(char *filepath, char *timer, char *opcode, 
+					 char *dispatch_message)
+{
+	char absolute_filepath [PATH_MAX+1];
+	struct stat *filestat = malloc(sizeof(struct stat));
+
+	file_path_validation(filepath, absolute_filepath);	
+	if((stat(absolute_filepath, filestat)!= 0) ||
+		(filestat->st_uid != geteuid())){
+		display_error_exit();
+	}
+	free(filestat);
+	/* 	This job is eligible to be put in the queue	*/
+	/*	Despatch the job to the server	*/
+	strlcat(dispatch_message, absolute_filepath, MESSAGE_BUFFER_SIZE);
+	strlcat(dispatch_message, MESSAGE_SEPARATOR, MESSAGE_BUFFER_SIZE);
+	strlcat(dispatch_message, timer, MESSAGE_BUFFER_SIZE);
+	strlcat(dispatch_message, MESSAGE_SEPARATOR, MESSAGE_BUFFER_SIZE);
+	strlcat(dispatch_message, opcode, MESSAGE_BUFFER_SIZE);
+	strlcat(dispatch_message, MESSAGE_SEPARATOR, MESSAGE_BUFFER_SIZE);
+
 	fprintf(stdout, "Final message: %s\n",dispatch_message);
 }
 
@@ -161,10 +182,13 @@ int main(int argc, char *argv[])
 	switch(opcode){
 		case OCHMOD:
 			process_ochmod(argv[1], argv[2], argv[3], argv[4], buffer);
-			send_message(buffer, sock_fd);
+			break;
+		case OREMOVE:
+			process_oremove(argv[1], argv[2], argv[3], buffer);
 			break;
 		default: usage(argv[0]);
 				 exit(1);
 	}
+	send_message(buffer, sock_fd);
 	return 0;
 }

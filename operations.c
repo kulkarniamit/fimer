@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #include "include/operations.h"
 
 void process_chmod(char *filepath, char *params)
@@ -13,8 +14,14 @@ void process_chmod(char *filepath, char *params)
     char *permissions = strtok_r(params, MESSAGE_SEPARATOR, &savedptr);
     i = strtol(permissions, 0, 8);
     if (chmod (filepath,i) < 0){
-        syslog(LOG_ERR, "File permissions could not be changed for %s",
+        syslog(LOG_ERR, "File permissions could not be changed for %s\n",
                filepath);
     }
 }
 
+void process_rm(char *filepath, char *params)
+{
+	if(unlink(filepath)){
+        syslog(LOG_ERR, "%s could not be deleted\n", filepath);
+	}
+}
