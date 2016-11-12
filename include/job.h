@@ -19,4 +19,11 @@ struct job
     struct job *next;
 };
 
+struct message
+{
+	char *received_filepath;
+	char *received_parameters;
+	unsigned int opcode, expiry_time;
+};
+
 #endif

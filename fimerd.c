@@ -15,7 +15,6 @@
  * If a job has expired, action is taken and job is removed from queue
  */
 
-#include <ctype.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -34,13 +33,13 @@
 #include "include/job.h"
 #include "include/linkedlist.h"
 #include "include/utilities.h"
+#include "include/parser.h"
 
 #define LISTENING_PORT 51515
 #define BACKLOG	2
 #define MESSAGE_BUFFER_SIZE 1024
-#define MESSAGE_SEPARATOR ":"
 /*	Accepted timestamp units: 'h','s','m','d','M','y','w'	*/
-#define DEFAULT_TIME_UNIT 'm'
+//#define DEFAULT_TIME_UNIT 'm'
 
 struct job *head = NULL;
 struct timespec current_time;
@@ -59,39 +58,6 @@ void process_chmod(char *filepath, char *params)
 		syslog(LOG_ERR, "File permissions could not be changed for %s",
 			   filepath);
 	}
-}
-
-char get_duration_unit(char *received_duration)
-{
-	while(!isalpha(*received_duration) && *received_duration != '\0'){
-		received_duration++;
-	}
-	return (*received_duration == '\0')?
-			DEFAULT_TIME_UNIT:
-			*received_duration;
-}
-/**********************************************************************/
-unsigned int get_duration_seconds(unsigned int duration, char unit)
-{
-	unsigned int duration_in_seconds;
-	switch(unit){
-		case 's':	duration_in_seconds = duration;
-					break;
-		case 'm':	duration_in_seconds = MINUTES_TO_SECONDS(duration);
-                    break;
-		case 'h':	duration_in_seconds = HOURS_TO_SECONDS(duration);
-                    break;
-		case 'd':	duration_in_seconds = DAYS_TO_SECONDS(duration);
-                    break;
-		case 'M':	duration_in_seconds = MONTHS_TO_SECONDS(duration);
-                    break;
-		case 'w':	duration_in_seconds = WEEKS_TO_SECONDS(duration);
-                    break;
-		case 'y':	duration_in_seconds = YEARS_TO_SECONDS(duration);
-                    break;
-		default:	exit(EXIT_FAILURE);
-	}
-	return duration_in_seconds;
 }
 
 void create_new_job(struct job_data *data, struct timespec *expiry_time)
@@ -113,37 +79,16 @@ void assign_job(char *job_message)
 	*/
 	struct timespec job_assign_time, job_expiry_time;
 	struct job_data *data = malloc(sizeof(struct job_data));
-	unsigned int opcode, duration, expiry_time;
-	char duration_unit;
+	struct message *parsed_message = malloc(sizeof(struct message));
 
-	/*
-		Well, strtok_r() has been generous enough to do this job.
-		All we have to do it just pass char * pointer and it will
-		take care of the rest of the allocation job	*/
-	char *received_filepath, *received_duration, *received_opcode;
-	char *received_parameters;
-	char *saveptr = NULL;
-
-	/*	strtok_r() modifies its first argument, save a backup	*/
-	char *received_message = strdup(job_message);
-	
-	received_filepath = strtok_r(received_message, MESSAGE_SEPARATOR, &saveptr);
-	received_duration = strtok_r(NULL, MESSAGE_SEPARATOR, &saveptr);
-	received_opcode   = strtok_r(NULL, MESSAGE_SEPARATOR, &saveptr);
-	received_parameters = saveptr;
-
-	opcode   = (unsigned int)strtol(received_opcode, NULL, 10);
-	duration = (unsigned int)strtol(received_duration, NULL, 10);
-	duration_unit = get_duration_unit(received_duration);
-	expiry_time = get_duration_seconds(duration, duration_unit);
-
+	parsed_message = get_parsed_message(job_message);
 	/*  Initialize job_data struct  */
-	data->filepath = malloc(strlen(received_filepath)+1);   /* Remember +1 */
-	strcpy(data->filepath, received_filepath);
-	data->params= malloc(strlen(received_parameters)+1);    /* Remember +1 */
-	strcpy(data->params, received_parameters);
+	data->filepath = malloc(strlen(parsed_message->received_filepath)+1);   /* Remember +1 */
+	strcpy(data->filepath, parsed_message->received_filepath);
+	data->params= malloc(strlen(parsed_message->received_parameters)+1);    /* Remember +1 */
+	strcpy(data->params, parsed_message->received_parameters);
 	
-	switch(opcode){
+	switch(parsed_message->opcode){
 		case OCHMOD:
 			data->opcode = OCHMOD;
 			data->job_worker = process_chmod;
@@ -153,9 +98,10 @@ void assign_job(char *job_message)
 	
 	clock_gettime(CLOCK_MONOTONIC, &job_assign_time);
 	job_expiry_time = job_assign_time;
-	job_expiry_time.tv_sec += expiry_time;
+	job_expiry_time.tv_sec += parsed_message->expiry_time;
 
 	create_new_job(data,&job_expiry_time);
+	free(parsed_message);
 }
 
 void display_error_exit()
@@ -225,7 +171,7 @@ void execute_eligible_jobs(){
 		3.	Unlink expired job from list
 	*/
 	clock_gettime(CLOCK_MONOTONIC, &current_time);
-	syslog(LOG_INFO, "Current time: %d\n",current_time.tv_sec);
+//	syslog(LOG_INFO, "Current time: %d\n",current_time.tv_sec);
 	struct job *current = head;
 	struct job *next_job;
 	while(current != NULL){
@@ -299,9 +245,9 @@ int main(int argc, char *argv[]) {
 	pthread_create(&server_thread, NULL, thread_job, NULL);
 	
 	while (1) {
-	    sleep(2);
+	    sleep(1);
 		if(head != NULL){
-			syslog(LOG_INFO, "head is not NULL, continuing check..\n");
+//			syslog(LOG_INFO, "head is not NULL, continuing check..\n");
 			/*	There are some jobs in the linkedlist queue	*/
 			execute_eligible_jobs();
 		}
