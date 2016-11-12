@@ -2,7 +2,7 @@ IDIR=include
 CC=gcc
 
 #CFLAGS=-I$(IDIR)
-CFLAGS=-g
+CFLAGS=-Wall
 OBJDIR=obj
 CLIENT_ODIR=$(OBJDIR)/client
 SERVER_ODIR=$(OBJDIR)/server
@@ -15,6 +15,14 @@ CLIENT_LIBS=-lbsd
 SERVER_LIBS=-lpthread
 
 DELIVERABLES=fimerclient fimerd
+
+DEBUG=no
+
+ifeq ($(DEBUG),yes)
+	CFLAGS += -ggdb3
+else
+	CFLAGS += -O2
+endif
 
 ########################################################
 # Client build
@@ -31,10 +39,11 @@ $(CLIENT_ODIR)/%.o: %.c $(CLIENT_DEPS)
 ########################################################
 # Server build
 ########################################################
-S_DEPS = opcodes.h job.h linkedlist.h utilities.h parser.h
+S_DEPS = opcodes.h job.h linkedlist.h utilities.h parser.h \
+		 operations.h
 SERVERD_DEPS = $(patsubst %,$(IDIR)/%,$(S_DEPS))
 
-SD_OBJ = fimerd.o linkedlist.o parser.o
+SD_OBJ = fimerd.o linkedlist.o parser.o operations.o
 SERVERD_OBJ = $(patsubst %,$(SERVER_ODIR)/%,$(SD_OBJ))
 	
 $(SERVER_ODIR)/%.o: %.c $(SERVERD_DEPS)
