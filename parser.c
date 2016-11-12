@@ -56,21 +56,11 @@ struct message* get_parsed_message(char *received_message)
     parsed_message->received_filepath = strtok_r(received_message, 
 												 MESSAGE_SEPARATOR, 
 												 &saveptr);
-    received_duration = strtok_r(NULL, 
-												 MESSAGE_SEPARATOR, 
-												 &saveptr);
-    received_opcode   = strtok_r(NULL,
-												 MESSAGE_SEPARATOR, 
-												 &saveptr);
+    received_duration = strtok_r(NULL, MESSAGE_SEPARATOR, &saveptr);
+    received_opcode   = strtok_r(NULL, MESSAGE_SEPARATOR, &saveptr);
     parsed_message->received_parameters = saveptr;
-
-    parsed_message->opcode   = (unsigned int)strtol(
-												received_opcode, 
-												NULL, 
-												10);
-    duration = (unsigned int)strtol(received_duration, 
-									NULL, 
-									10);
+    parsed_message->opcode = (unsigned int)strtol(received_opcode, NULL, 10);
+    duration = (unsigned int)strtol(received_duration, NULL, 10);
     duration_unit = get_duration_unit(received_duration);
     parsed_message->expiry_time = get_duration_seconds(duration, duration_unit);
 	return parsed_message;
