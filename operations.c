@@ -25,3 +25,10 @@ void process_rm(char *filepath, char *params)
         syslog(LOG_ERR, "%s could not be deleted\n", filepath);
 	}
 }
+
+void process_truncate(char *filepath, char *params)
+{
+	if(truncate(filepath, 0)){
+        syslog(LOG_ERR, "%s could not be truncated\n", filepath);
+	}
+}
