@@ -34,6 +34,7 @@
 #include "include/linkedlist.h"
 #include "include/utilities.h"
 #include "include/parser.h"
+#include "include/operations.h"
 
 #define LISTENING_PORT 51515
 #define BACKLOG	2
@@ -43,22 +44,6 @@
 
 struct job *head = NULL;
 struct timespec current_time;
-/**********************************************************************/
-/*	Operation methods to be moved to a header file					  */
-/**********************************************************************/
-void process_chmod(char *filepath, char *params)
-{
-	int i;
-	char *savedptr = NULL;
-	/* params is of the form: "0444:"	*/
-	/*	params is ':' separated, get relevant information	*/
-	char *permissions = strtok_r(params, MESSAGE_SEPARATOR, &savedptr);
-	i = strtol(permissions, 0, 8);
-	if (chmod (filepath,i) < 0){
-		syslog(LOG_ERR, "File permissions could not be changed for %s",
-			   filepath);
-	}
-}
 
 void create_new_job(struct job_data *data, struct timespec *expiry_time)
 {
@@ -82,10 +67,12 @@ void assign_job(char *job_message)
 	struct message *parsed_message = malloc(sizeof(struct message));
 
 	parsed_message = get_parsed_message(job_message);
-	/*  Initialize job_data struct  */
-	data->filepath = malloc(strlen(parsed_message->received_filepath)+1);   /* Remember +1 */
+
+	/* Remember +1 */
+	data->filepath = malloc(strlen(parsed_message->received_filepath)+1);
 	strcpy(data->filepath, parsed_message->received_filepath);
-	data->params= malloc(strlen(parsed_message->received_parameters)+1);    /* Remember +1 */
+	/* Remember +1 */
+	data->params= malloc(strlen(parsed_message->received_parameters)+1);
 	strcpy(data->params, parsed_message->received_parameters);
 	
 	switch(parsed_message->opcode){
@@ -121,12 +108,12 @@ void serv_addr_init(struct sockaddr_in *serv_addr_ptr)
     serv_addr_ptr->sin_port = htons(LISTENING_PORT);
 }
 
-void *thread_job(void *ptr){
+void *thread_job(void *ptr)
+{
 	/*	Socket listening code	*/
 	int listen_fd = 0, conn_fd = 0;
 	struct sockaddr_in serv_addr;
 	char buffer[MESSAGE_BUFFER_SIZE];
-	struct timespec job_assign_time, now;
 
 	memset(&serv_addr, 0, sizeof(serv_addr));
 	memset(buffer, 0, sizeof(buffer));
@@ -155,13 +142,14 @@ void *thread_job(void *ptr){
 		}
 		syslog(LOG_INFO, "Received a message on socket\n");
 		clock_gettime(CLOCK_MONOTONIC, &current_time);
-	    syslog(LOG_INFO, "Current time: %d\n",current_time.tv_sec);
+	    syslog(LOG_INFO, "Current time: %ld\n",current_time.tv_sec);
 	
 		/*	Function to parse and add job to queue	*/	
 		assign_job(buffer);
 		memset(buffer, 0, sizeof(buffer));
 	}
 	close(listen_fd);
+	pthread_exit(NULL);
 }
 
 void execute_eligible_jobs(){
@@ -192,7 +180,8 @@ void execute_eligible_jobs(){
 
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
 	pid_t pid, sid;
 	
 	pthread_t server_thread;
@@ -255,4 +244,5 @@ int main(int argc, char *argv[]) {
 	
 	/* this is optional and only needs to be done when your daemon exits */
 	closelog();
+	return 0;
 }

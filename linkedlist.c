@@ -11,7 +11,7 @@ void print_jobs_list(struct job *head)
         syslog(LOG_INFO, "delete flag: %d\n", current->delete);
         syslog(
             LOG_INFO,
-            "Duration: %d%c\n",
+            "Duration: %ld\n",
             current->job_expiry.tv_sec);
         syslog(
             LOG_INFO,
