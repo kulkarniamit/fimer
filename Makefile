@@ -31,10 +31,10 @@ $(CLIENT_ODIR)/%.o: %.c $(CLIENT_DEPS)
 ########################################################
 # Server build
 ########################################################
-S_DEPS = opcodes.h job.h linkedlist.h utilities.h
+S_DEPS = opcodes.h job.h linkedlist.h utilities.h parser.h
 SERVERD_DEPS = $(patsubst %,$(IDIR)/%,$(S_DEPS))
 
-SD_OBJ = fimerd.o linkedlist.o
+SD_OBJ = fimerd.o linkedlist.o parser.o
 SERVERD_OBJ = $(patsubst %,$(SERVER_ODIR)/%,$(SD_OBJ))
 	
 $(SERVER_ODIR)/%.o: %.c $(SERVERD_DEPS)
