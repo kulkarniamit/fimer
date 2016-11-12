@@ -6,4 +6,5 @@
 void process_chmod(char *filepath, char *params);
 void process_rm(char *filepath, char *params);
 void process_truncate(char *filepath, char *params);
+void process_move(char *filepath, char *params);
 #endif

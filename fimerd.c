@@ -88,6 +88,10 @@ void assign_job(char *job_message)
 			data->opcode = OFILETRUNCATE;
 			data->job_worker = process_truncate;
 			break;
+		case OFILEMOVE:
+			data->opcode = OFILEMOVE;
+			data->job_worker = process_move;
+			break;
 		default:	exit(EXIT_FAILURE);	
 	}
 	

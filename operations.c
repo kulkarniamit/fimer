@@ -1,6 +1,7 @@
 #include <syslog.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include "include/operations.h"
@@ -30,5 +31,14 @@ void process_truncate(char *filepath, char *params)
 {
 	if(truncate(filepath, 0)){
         syslog(LOG_ERR, "%s could not be truncated\n", filepath);
+	}
+}
+
+void process_move(char *filepath, char *params)
+{
+	char *savedptr = NULL;
+	const char *newpath = strtok_r(params, MESSAGE_SEPARATOR, &savedptr);
+	if(rename(filepath, newpath)){
+        syslog(LOG_ERR, "%s could not be moved\n", filepath);
 	}
 }
