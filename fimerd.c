@@ -53,7 +53,7 @@ void create_new_job(struct job_data *data, struct timespec *expiry_time)
     new->job_expiry = *expiry_time;
     new->next = NULL;	/*	Job appended at the end of list	*/
     append_jobs_list(&head, new);
-    print_jobs_list(head);
+//    print_jobs_list(head);
 }
 
 void assign_job(char *job_message)
@@ -154,7 +154,7 @@ void *thread_job(void *ptr)
 		}
 		syslog(LOG_INFO, "Received a message on socket\n");
 		clock_gettime(CLOCK_MONOTONIC, &current_time);
-	    syslog(LOG_INFO, "Current time: %ld\n",current_time.tv_sec);
+//	    syslog(LOG_INFO, "Current time: %ld\n",current_time.tv_sec);
 	
 		/*	Function to parse and add job to queue	*/	
 		assign_job(buffer);
@@ -177,7 +177,7 @@ void execute_eligible_jobs(){
 	while(current != NULL){
 		next_job = current->next;
 		if(current->job_expiry.tv_sec <= current_time.tv_sec){
-			syslog(LOG_INFO,"Time to delete job!\n");
+			syslog(LOG_INFO,"Time to perform a job!\n");
 			/*	Eligible job to be executed	*/
 			current->data->job_worker(current->data->filepath, 
 									  current->data->params);
