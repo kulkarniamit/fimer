@@ -46,14 +46,18 @@ void usage(char *prog_name)
 {
 	fprintf(
 		stdout, 
-		"usage: %s %s %s %s %s\n",
+		"\nusage: %s %s %s %s %s\n",
 		prog_name,
 		"filepath",
 		"timer_in_seconds",
 		"opcode",
-		"permissions");
+		"<permissions|new_path>");
 
-	fprintf(stdout, "\tchmod a file after some time\n");
+	fprintf(stdout, "Supported operations: \n");
+	fprintf(stdout, "1. Change file permissions (opcode = 1)\n");
+	fprintf(stdout, "2. Delete a file (opcode = 2)\n");
+	fprintf(stdout, "3. Truncate a file (opcode = 3)\n");
+	fprintf(stdout, "4. Rename/Move a file (opcode = 4)\n\n");
 }
  	
 void serv_addr_init(struct sockaddr_in *serv_addr_ptr)
