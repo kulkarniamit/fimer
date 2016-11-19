@@ -26,10 +26,24 @@ Usage
 ```C
 $ ./fimerd 
 
-$ ./fimerclient filepath timer_in_seconds opcode <permissions|new_path>
+$ ./fimerclient filepath time_delay opcode <permissions|new_path>
 Supported operations: 
 1. Change file permissions (opcode = 1)
 2. Delete a file (opcode = 2)
 3. Truncate a file (opcode = 3)
 4. Rename/Move a file (opcode = 4)
+
+Supported time delays: 
+s[seconds] | m[minutes] | h[hours] | d[days] | M[months] | y[years]
+
+```
+
+Example commands
+------
+```C
+* ./fimerclient ~/mysecretfile 2d 1 0755
+* ./fimerclient ~/mysecretfile 1M 2
+* ./fimerclient ~/mylogfile 7d 3
+* ./fimerclient ~/myfile 60m 4 /home/myaccount/files/backupfile
+
 ```
