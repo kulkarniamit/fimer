@@ -49,7 +49,7 @@ void usage(char *prog_name)
 		"\nusage: %s %s %s %s %s\n",
 		prog_name,
 		"filepath",
-		"timer_in_seconds",
+		"time_delay",
 		"opcode",
 		"<permissions|new_path>");
 
@@ -58,6 +58,10 @@ void usage(char *prog_name)
 	fprintf(stdout, "2. Delete a file (opcode = 2)\n");
 	fprintf(stdout, "3. Truncate a file (opcode = 3)\n");
 	fprintf(stdout, "4. Rename/Move a file (opcode = 4)\n\n");
+
+	fprintf(stdout, "Supported time delays: \n");
+	fprintf(stdout, "s[seconds] | m[minutes] | h[hours] | d[days] | M[months] |"
+					 " y[years]\n\n");
 }
  	
 void serv_addr_init(struct sockaddr_in *serv_addr_ptr)
