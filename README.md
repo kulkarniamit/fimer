@@ -1,6 +1,12 @@
 # fimer
 Timer daemon for file operations
 
+BUILD
+------
+```Shell
+$ make all
+```
+
 Objectives
 ------
 1. Implement a daemon
@@ -18,6 +24,8 @@ Architecture
 Usage
 ------
 ```C
+$ ./fimerd 
+
 $ ./fimerclient filepath timer_in_seconds opcode <permissions|new_path>
 Supported operations: 
 1. Change file permissions (opcode = 1)
