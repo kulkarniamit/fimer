@@ -47,3 +47,6 @@ Example commands
 * ./fimerclient ~/myfile 60m 4 /home/myaccount/files/backupfile
 
 ```
+
+## Demo
+[![Project Fimer Demo](http://img.youtube.com/vi/-FFIowmf-wA/0.jpg)](http://www.youtube.com/watch?v=-FFIowmf-wA)
